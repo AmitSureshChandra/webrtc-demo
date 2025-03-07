@@ -1,0 +1,30 @@
+@startuml
+participant "User1 (Caller)" as User1
+participant "Signaling Server" as Signaling
+participant "User2 (Callee)" as User2
+
+== WebSocket Connection ==
+User1 -> Signaling: Connect via WebSocket
+User2 -> Signaling: Connect via WebSocket
+
+== Call Setup ==
+User1 -> Signaling: Offer (SDP)
+Signaling -> User2: Forward Offer (SDP)
+
+User2 -> Signaling: Answer (SDP)
+Signaling -> User1: Forward Answer (SDP)
+
+== ICE Candidate Exchange ==
+User1 -> Signaling: ICE Candidate
+Signaling -> User2: Forward ICE Candidate
+
+User2 -> Signaling: ICE Candidate
+Signaling -> User1: Forward ICE Candidate
+
+== Direct Peer-to-Peer Connection ==
+User1 -> User2: Establish WebRTC Peer Connection
+
+== Media Stream Starts ==
+User1 -> User2: Send Audio/Video Streams
+User2 -> User1: Send Audio/Video Streams
+@enduml
