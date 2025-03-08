@@ -8,7 +8,7 @@
 </template>
 
 <script>
-const SIGNALING_SERVER_URL = "ws://localhost:8080/ws";
+const SIGNALING_SERVER_URL = process.env.WS_URL ?? "ws://localhost:8080/ws";
 
 export default {
   data() {
@@ -21,6 +21,7 @@ export default {
   },
   methods: {
     async startCall() {
+      console.log({SIGNALING_SERVER_URL})
       this.ws = new WebSocket(SIGNALING_SERVER_URL);
       this.ws.onmessage = this.handleSignalingMessage;
 
