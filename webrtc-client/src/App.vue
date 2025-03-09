@@ -1,7 +1,9 @@
 <template>
-  <div>
-    <h1>WebRTC Demo</h1>
-    <WebRTCChat />
+  <div style="height: 100vh;text-align: center;padding-top: 10px;">
+    <div>
+      <h1>Video Meet</h1>
+      <WebRTCChat />
+    </div>
   </div>
 </template>
 

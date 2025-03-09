@@ -1,18 +1,45 @@
 <template>
-  <div>
-    <h2>WebRTC Video Chat</h2>
-    <video ref="localVideo" autoplay playsinline></video>
-    <video ref="remoteVideo" autoplay playsinline></video>
-    <button @click="startCall">Start Call</button>
+    <div>
+      <div v-if="roomId" style="position: relative;">
+        <section>
+            <button @click="startCall">Start Call</button>
+        </section>
+        <section>
+        <video ref="remoteVideo" autoplay playsinline style="border: 1px solid wheat; width: 90vw; margin: 5vw;"></video>
+    </section>
+    <section style="position: absolute; top: 0; right: 0;">
+        <video ref="localVideo" autoplay playsinline style="border: 1px solid wheat; width: 15vw; margin: 10vw;"></video>
+    </section>
   </div>
+  <div v-else style="text-align: left; padding: 20px;">
+    <p> Want to create meeting 
+      <button @click="createRoom">Create Room</button>
+    </p>
+
+    <p @submit.prevent> Want to join meeting
+      <button @click="joinRoom">Join Room</button>
+    </p>
+    
+  </div>
+    </div>
+  
+  
 </template>
 
 <script>
 const SIGNALING_SERVER_URL = import.meta.env.VITE_WS_URL + "/ws";
 
 export default {
+  created() {
+      this.roomId = window.location.href.split("/").pop();
+      console.log(this.roomId)
+
+      // if roomId is not null join the room automatically
+  },
   data() {
     return {
+      roomCreated: false,
+      roomId: null,
       ws: null, // WebSocket connection
       localStream: null,
       peerConnection: null,
@@ -20,6 +47,19 @@ export default {
     };
   },
   methods: {
+    joinRoom() {
+      let roomId = prompt("Enter Room ID");
+      window.location.href = window.location.href + roomId;
+    },
+    createRoom() {
+
+      // fetch room id from server
+      // this.roomId = "1234";
+      let roomId = 1234;
+
+      window.location.href = window.location.href + roomId;
+
+    },
     async startCall() {
       console.log({SIGNALING_SERVER_URL})
       this.ws = new WebSocket(SIGNALING_SERVER_URL);
