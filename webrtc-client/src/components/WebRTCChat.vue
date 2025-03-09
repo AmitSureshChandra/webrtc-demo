@@ -2,13 +2,15 @@
     <div>
       <div v-if="roomId" style="position: relative;">
         <section>
-            <button @click="startCall">Start Call</button>
+          <button v-if="!callStarted" @click="startCall">Start Call</button>
+          <button v-else @click="endCall">End Call</button>
+
         </section>
         <section>
-        <video ref="remoteVideo" autoplay playsinline style="border: 1px solid wheat; width: 90vw; margin: 5vw;"></video>
+        <video ref="remoteVideo" autoplay playsinline style="border: 1px solid wheat; width: 70vw; margin: 5vw;"></video>
     </section>
     <section style="position: absolute; top: 0; right: 0;">
-        <video ref="localVideo" autoplay playsinline style="border: 1px solid wheat; width: 15vw; margin: 10vw;"></video>
+        <video ref="localVideo" autoplay playsinline style="border: 1px solid wheat; width: 15vw; margin-top: 10vw;margin-right: 17vw"></video>
     </section>
   </div>
   <div v-else style="text-align: left; padding: 20px;">
@@ -27,7 +29,9 @@
 </template>
 
 <script>
-const SIGNALING_SERVER_URL = import.meta.env.VITE_WS_URL + "/ws";
+import axios from 'axios';
+
+const SIGNALING_SERVER_URL = import.meta.env.VITE_WS_URL;
 
 export default {
   created() {
@@ -38,7 +42,7 @@ export default {
   },
   data() {
     return {
-      roomCreated: false,
+      callStarted: false,
       roomId: null,
       ws: null, // WebSocket connection
       localStream: null,
@@ -51,18 +55,26 @@ export default {
       let roomId = prompt("Enter Room ID");
       window.location.href = window.location.href + roomId;
     },
-    createRoom() {
-
+    async createRoom() {
       // fetch room id from server
-      // this.roomId = "1234";
-      let roomId = 1234;
-
-      window.location.href = window.location.href + roomId;
-
+      try {
+        let res = await axios.post(SIGNALING_SERVER_URL + "/room")
+        console.log(res.data.msg);
+        let roomId = res.data.msg;
+        window.location.href = window.location.href + roomId;
+      } catch(err) {
+        console.log(err);
+      } 
+    },
+    endCall() {
+      this.localStream.getTracks().forEach(track => track.stop());
+      this.peerConnection.close();
+      this.ws.close();
+      this.callStarted = false;
     },
     async startCall() {
       console.log({SIGNALING_SERVER_URL})
-      this.ws = new WebSocket(SIGNALING_SERVER_URL);
+      this.ws = new WebSocket(SIGNALING_SERVER_URL+ "/ws?roomId=" + this.roomId);
       this.ws.onmessage = this.handleSignalingMessage;
 
       // Get webcam and microphone
@@ -87,6 +99,8 @@ export default {
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
       this.sendMessage({ type: "offer", sdp: offer.sdp });
+
+      this.callStarted = true;
     },
 
     async handleSignalingMessage(event) {
@@ -121,6 +135,11 @@ export default {
       if (message.type === "candidate") {
         // ICE Candidate received
         await this.peerConnection.addIceCandidate(new RTCIceCandidate(message.candidate));
+      }
+
+      if (message.type == 'end_call') {
+        alert('Call ended by user');
+        this.endCall();
       }
     },
 
