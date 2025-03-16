@@ -35,7 +35,7 @@ const SIGNALING_SERVER_URL = import.meta.env.VITE_WS_URL;
 
 export default {
   created() {
-      this.roomId = window.location.href.split("/").pop();
+      this.roomId = new URLSearchParams(window.location.search).get("roomId");
       console.log(this.roomId)
 
       // if roomId is not null join the room automatically
@@ -53,7 +53,9 @@ export default {
   methods: {
     joinRoom() {
       let roomId = prompt("Enter Room ID");
-      window.location.href = window.location.href + roomId;
+      console.log(roomId);
+      if (roomId != null) 
+         window.location.href = window.location.href +"?roomId=" + roomId;
     },
     async createRoom() {
       // fetch room id from server
@@ -61,7 +63,8 @@ export default {
         let res = await axios.post(SIGNALING_SERVER_URL + "/room")
         console.log(res.data.msg);
         let roomId = res.data.msg;
-        window.location.href = window.location.href + roomId;
+        console.log(`window.location.href : ${window.location.href.substring(0, window.location.href.length - 1) +"?roomId=" + roomId}`);
+        window.location.href = window.location.href.substring(0, window.location.href.length - 1) +"?roomId=" + roomId;
       } catch(err) {
         console.log(err);
       } 
