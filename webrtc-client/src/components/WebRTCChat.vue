@@ -10,7 +10,7 @@
         <video ref="remoteVideo" autoplay playsinline style="border: 1px solid wheat; width: 70vw; margin: 5vw;"></video>
     </section>
     <section style="position: absolute; top: 0; right: 0;">
-        <video ref="localVideo" autoplay playsinline style="border: 1px solid wheat; width: 15vw; margin-top: 10vw;margin-right: 17vw"></video>
+        <video ref="localVideo" autoplay playsinline muted style="border: 1px solid wheat; width: 15vw; margin-top: 10vw;margin-right: 17vw"></video>
     </section>
   </div>
   <div v-else style="text-align: left; padding: 20px;">
@@ -38,6 +38,8 @@ export default {
       this.roomId = new URLSearchParams(window.location.search).get("roomId");
       console.log(this.roomId)
 
+      if (this.roomId) this.startCall(); 
+
       // if roomId is not null join the room automatically
   },
   data() {
@@ -63,13 +65,17 @@ export default {
         let res = await axios.post(SIGNALING_SERVER_URL + "/room")
         console.log(res.data.msg);
         let roomId = res.data.msg;
-        console.log(`window.location.href : ${window.location.href.substring(0, window.location.href.length - 1) +"?roomId=" + roomId}`);
-        window.location.href = window.location.href.substring(0, window.location.href.length - 1) +"?roomId=" + roomId;
+        console.log(`${window.location.origin}?roomId=${roomId}`);
+        window.location.href= `${window.location.origin}?roomId=${roomId}`;
       } catch(err) {
         console.log(err);
       } 
     },
     endCall() {
+
+      if (this.ws.readyState === WebSocket.OPEN) {
+          this.sendMessage({ type: "end_call" });
+      }
       this.localStream.getTracks().forEach(track => track.stop());
       this.peerConnection.close();
       this.ws.close();
@@ -79,6 +85,11 @@ export default {
       console.log({SIGNALING_SERVER_URL})
       this.ws = new WebSocket(SIGNALING_SERVER_URL+ "/ws?roomId=" + this.roomId);
       this.ws.onmessage = this.handleSignalingMessage;
+
+      this.ws.onclose = () => {
+        console.log("WebSocket disconnected. Attempting to reconnect...");
+        setTimeout(() => this.startCall(), 2000);
+      };
 
       // Get webcam and microphone
       this.localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -110,9 +121,12 @@ export default {
       const message = JSON.parse(event.data);
 
       if (message.type === "offer") {
+        
         // Remote offer received
-        this.peerConnection = new RTCPeerConnection(this.configuration);
-        this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
+        if (!this.peerConnection) {
+          this.peerConnection = new RTCPeerConnection(this.configuration);
+          this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
+        }
 
         this.peerConnection.onicecandidate = event => {
           if (event.candidate) {
