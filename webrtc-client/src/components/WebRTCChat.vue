@@ -38,7 +38,10 @@ export default {
       this.roomId = new URLSearchParams(window.location.search).get("roomId");
       console.log(this.roomId)
 
-      if (this.roomId) this.startCall(); 
+      if (this.roomId) {
+        this.startCall(); 
+        this.callStarted = true;
+      }
 
       // if roomId is not null join the room automatically
   },
@@ -112,6 +115,8 @@ export default {
       // Create SDP Offer
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
+
+      console.log("Sending offer: ", offer);
       this.sendMessage({ type: "offer", sdp: offer.sdp });
 
       this.callStarted = true;
